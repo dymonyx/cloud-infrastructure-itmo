@@ -67,10 +67,6 @@ Chainwise `/bike/profile` и `/bike/check`, а также предоставля
 - доля ошибок — отношение скорости роста error counter к request counter;
 - p95 — `histogram_quantile(0.95, ...)` по бакетам гистограммы.
 
-После запуска нагрузки на графике появился всплеск, а запрос с задержкой дал
-p95, равный 2,95 секунды из-за верхней границы соответствующего histogram
-bucket.
-
 ![RED dashboard](screenshots/grafana-red-dashboard.jpg)
 
 ## 5. Логи
