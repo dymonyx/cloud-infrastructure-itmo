@@ -1,0 +1,11 @@
+flowchart LR
+    user["Пользователь · HTTPS"]
+    waf["WAF · уровень L7"]
+    nacl["Network ACL · уровень подсети"]
+    sg["Security Group · уровень экземпляра"]
+    app["Приложение Chainwise · frontend или bike-api"]
+
+    user --> waf
+    waf --> nacl
+    nacl --> sg
+    sg --> app
