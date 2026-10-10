@@ -1,0 +1,73 @@
+flowchart TB
+    users([Пользователи])
+    meteo[Open-Meteo]
+    igw[Internet Gateway]
+
+    users -->|HTTPS 443| igw --> alb
+
+    subgraph vpc["VPC 10.100.0.0/16"]
+        direction LR
+        alb[Публичный ALB<br/>узлы в public-подсетях AZ1–AZ3]
+
+        subgraph az1[AZ1]
+            direction TB
+            subgraph pub1["public-az1 · 10.100.1.0/24"]
+                nat1[NAT Gateway AZ1]
+            end
+            subgraph priv1["private-az1 · 10.100.11.0/24"]
+                app1[Экземпляры сервисов Chainwise]
+            end
+            subgraph data1["data-az1 · 10.100.21.0/24"]
+                db1[(PostgreSQL primary)]
+            end
+        end
+
+        subgraph az2[AZ2]
+            direction TB
+            subgraph pub2["public-az2 · 10.100.2.0/24"]
+                nat2[NAT Gateway AZ2]
+            end
+            subgraph priv2["private-az2 · 10.100.12.0/24"]
+                app2[Экземпляры сервисов Chainwise]
+            end
+            subgraph data2["data-az2 · 10.100.22.0/24"]
+                db2[(PostgreSQL standby)]
+            end
+        end
+
+        subgraph az3[AZ3]
+            direction TB
+            subgraph pub3["public-az3 · 10.100.3.0/24"]
+                nat3[NAT Gateway AZ3]
+            end
+            subgraph priv3["private-az3 · 10.100.13.0/24"]
+                app3[Экземпляры сервисов Chainwise]
+            end
+            subgraph data3["data-az3 · 10.100.23.0/24"]
+                db3[(PostgreSQL standby)]
+            end
+        end
+
+        alb --> app1
+        alb --> app2
+        alb --> app3
+
+        app1 --> db1
+        app2 --> db1
+        app3 --> db1
+
+        db1 -. синхронная репликация .-> db2
+        db1 -. синхронная репликация .-> db3
+
+        app1 -->|исходящий трафик| nat1
+        app2 -->|исходящий трафик| nat2
+        app3 -->|исходящий трафик| nat3
+        db1 -. исходящий трафик .-> nat1
+        db2 -. исходящий трафик .-> nat2
+        db3 -. исходящий трафик .-> nat3
+    end
+
+    nat1 --> igw
+    nat2 --> igw
+    nat3 --> igw
+    igw --> meteo
