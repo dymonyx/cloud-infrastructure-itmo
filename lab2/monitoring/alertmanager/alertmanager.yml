@@ -1,0 +1,17 @@
+global:
+  resolve_timeout: 1m
+
+route:
+  receiver: chainwise-webhook
+  group_by:
+    - alertname
+    - service
+  group_wait: 2s
+  group_interval: 10s
+  repeat_interval: 1h
+
+receivers:
+  - name: chainwise-webhook
+    webhook_configs:
+      - url: http://bike-api:8081/internal/alerts
+        send_resolved: true

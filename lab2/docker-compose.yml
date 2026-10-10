@@ -1,0 +1,111 @@
+name: chainwise-lab2
+
+services:
+  bike-api:
+    build:
+      context: .
+    environment:
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
+      SELF_URL: http://bike-api:8081
+    ports:
+      - "8081:8081"
+    depends_on:
+      - jaeger
+    mem_limit: 128m
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:v3.14.0
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --web.enable-lifecycle
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./monitoring/prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - prometheus-data:/prometheus
+    depends_on:
+      - bike-api
+      - alertmanager
+    mem_limit: 512m
+    restart: unless-stopped
+
+  alertmanager:
+    image: prom/alertmanager:v0.34.1
+    command:
+      - --config.file=/etc/alertmanager/alertmanager.yml
+      - --storage.path=/alertmanager
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./monitoring/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager-data:/alertmanager
+    mem_limit: 128m
+    restart: unless-stopped
+
+  loki:
+    image: grafana/loki:3.7.8
+    command: -config.file=/etc/loki/local-config.yml
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./monitoring/loki/loki.yml:/etc/loki/local-config.yml:ro
+      - loki-data:/loki
+    mem_limit: 512m
+    restart: unless-stopped
+
+  alloy:
+    image: grafana/alloy:v1.20.1
+    command:
+      - run
+      - --server.http.listen-addr=0.0.0.0:12345
+      - --storage.path=/var/lib/alloy/data
+      - /etc/alloy/config.alloy
+    ports:
+      - "12345:12345"
+    volumes:
+      - ./monitoring/alloy/config.alloy:/etc/alloy/config.alloy:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - alloy-data:/var/lib/alloy/data
+    depends_on:
+      - loki
+      - bike-api
+    mem_limit: 256m
+    restart: unless-stopped
+
+  jaeger:
+    image: jaegertracing/jaeger:2.22.0
+    ports:
+      - "16686:16686"
+      - "4317:4317"
+      - "4318:4318"
+    mem_limit: 512m
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:13.2
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+      GF_AUTH_DISABLE_LOGIN_FORM: "true"
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    depends_on:
+      - prometheus
+      - loki
+      - jaeger
+    mem_limit: 1g
+    restart: unless-stopped
+
+volumes:
+  prometheus-data:
+  alertmanager-data:
+  loki-data:
+  alloy-data:
+  grafana-data:

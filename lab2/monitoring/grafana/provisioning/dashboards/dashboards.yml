@@ -1,0 +1,11 @@
+apiVersion: 1
+
+providers:
+  - name: Chainwise
+    orgId: 1
+    folder: Chainwise
+    type: file
+    disableDeletion: true
+    updateIntervalSeconds: 10
+    options:
+      path: /var/lib/grafana/dashboards

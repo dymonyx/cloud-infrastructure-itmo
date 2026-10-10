@@ -1,0 +1,42 @@
+groups:
+  - name: chainwise-red-alerts
+    rules:
+      - alert: ChainwiseHighErrorRate
+        expr: |
+          sum(rate(chainwise_http_errors_total[5m]))
+          /
+          clamp_min(sum(rate(chainwise_http_requests_total[5m])), 0.001)
+          > 0.20
+        for: 10s
+        labels:
+          severity: critical
+          service: chainwise-bike-api
+        annotations:
+          summary: "Доля ошибок bike-api выше 20%"
+          description: "Более 20% запросов завершились ответом 5xx за последние пять минут."
+
+      - alert: ChainwiseRequestSpike
+        expr: sum(rate(chainwise_http_requests_total[5m])) > 0.3
+        for: 5s
+        labels:
+          severity: warning
+          service: chainwise-bike-api
+        annotations:
+          summary: "Резкий рост числа запросов к bike-api"
+          description: "Средняя интенсивность запросов за пять минут превышает 0,3 запроса в секунду."
+
+      - alert: ChainwiseHighP95Latency
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (le) (
+              rate(chainwise_http_request_duration_seconds_bucket{path="/bike/demo/delay"}[5m])
+            )
+          ) > 1
+        for: 5s
+        labels:
+          severity: warning
+          service: chainwise-bike-api
+        annotations:
+          summary: "Высокая p95-задержка bike-api"
+          description: "p95 для демонстрационного медленного запроса превышает одну секунду."
