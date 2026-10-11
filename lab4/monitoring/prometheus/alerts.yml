@@ -1,0 +1,29 @@
+groups:
+  - name: chainwise-kafka
+    rules:
+      - alert: KafkaBrokerUnavailable
+        expr: (max(kafka_brokers) or vector(0)) < 1
+        for: 15s
+        labels:
+          severity: critical
+        annotations:
+          summary: Kafka broker is unavailable
+          description: Kafka exporter cannot see an active broker, so producers and consumers cannot exchange events.
+
+      - alert: MaintenanceConsumerMissing
+        expr: (max(kafka_consumergroup_members{consumergroup="maintenance-workers"}) or vector(0)) < 1
+        for: 30s
+        labels:
+          severity: warning
+        annotations:
+          summary: Maintenance consumer group has no active members
+          description: trip-recorded events remain in Kafka but maintenance calculations are not running.
+
+      - alert: KafkaConsumerLagHigh
+        expr: sum(clamp_min(kafka_consumergroup_lag{consumergroup="maintenance-workers",topic="trip-recorded"}, 0)) > 5
+        for: 30s
+        labels:
+          severity: warning
+        annotations:
+          summary: Maintenance consumer lag is high
+          description: More than five trip-recorded events are waiting for processing.

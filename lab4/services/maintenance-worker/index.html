@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Chainwise · Kafka consumer</title>
+  <style>
+    :root { color-scheme: dark; font-family: Inter, system-ui, sans-serif; }
+    body { margin: 0; background: #130d21; color: #ede9fe; }
+    main { max-width: 1040px; margin: 44px auto; padding: 0 24px; }
+    h1 { margin-bottom: 8px; font-size: 36px; }
+    p { color: #c4b5d8; line-height: 1.5; }
+    .meta { display: flex; flex-wrap: wrap; gap: 10px; margin: 22px 0; }
+    .tag { padding: 8px 12px; border: 1px solid #5b4778; border-radius: 999px; background: #211431; }
+    .panel { padding: 20px; border: 1px solid #3b2b52; border-radius: 16px; background: #1b112a; overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 11px 9px; border-bottom: 1px solid #3b2b52; text-align: left; white-space: nowrap; }
+    th { color: #c4b5fd; font-size: 13px; }
+    code { color: #86efac; }
+    .ready { color: #86efac; } .waiting { color: #facc15; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Chainwise maintenance-worker</h1>
+  <p>Consumer обрабатывает события <code>trip-recorded</code> и фиксирует Kafka partition, offset и имя экземпляра.</p>
+  <div class="meta">
+    <span class="tag">instance: <code id="instance">…</code></span>
+    <span class="tag">group: <code id="group">…</code></span>
+    <span class="tag">partitions: <code id="claims">…</code></span>
+    <span class="tag" id="state">Подключение…</span>
+  </div>
+  <section class="panel">
+    <table>
+      <thead><tr><th>trip_id</th><th>distance</th><th>partition</th><th>offset</th><th>instance</th><th>result</th></tr></thead>
+      <tbody id="items"></tbody>
+    </table>
+  </section>
+</main>
+<script>
+  async function refresh() {
+    const response = await fetch('/api/processed');
+    const body = await response.json();
+    document.getElementById('instance').textContent = body.instance;
+    document.getElementById('group').textContent = body.group;
+    document.getElementById('claims').textContent = Object.values(body.claims || {}).flat().join(', ') || 'нет';
+    const state = document.getElementById('state');
+    state.textContent = body.ready ? 'consumer active' : 'rebalance / ожидание';
+    state.className = `tag ${body.ready ? 'ready' : 'waiting'}`;
+    document.getElementById('items').innerHTML = (body.items || []).map(item => `<tr>
+      <td><code>${item.trip_id}</code></td><td>${item.distance_km} км</td><td>${item.partition}</td>
+      <td>${item.offset}</td><td>${item.instance}</td><td>${item.result}</td>
+    </tr>`).join('') || '<tr><td colspan="6">Обработанных событий пока нет</td></tr>';
+  }
+  refresh().catch(() => {});
+  setInterval(() => refresh().catch(() => {}), 1500);
+</script>
+</body>
+</html>

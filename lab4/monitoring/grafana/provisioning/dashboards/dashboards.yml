@@ -1,0 +1,11 @@
+apiVersion: 1
+
+providers:
+  - name: Chainwise Kafka
+    orgId: 1
+    folder: Chainwise
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 10
+    options:
+      path: /var/lib/grafana/dashboards
