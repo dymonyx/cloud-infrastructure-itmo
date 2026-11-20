@@ -1,0 +1,53 @@
+flowchart TB
+    users([Пользователи])
+    cdn[CloudFront CDN]
+    static[(S3 Standard<br/>статика frontend)]
+    alb[Публичный ALB]
+    backups[(S3 backups<br/>Standard → Standard-IA → Glacier → Deep Archive)]
+    snapshots[(Региональные<br/>снапшоты EBS)]
+
+    users --> cdn --> static
+    users --> alb
+
+    subgraph region[Регион AWS]
+        direction LR
+
+        subgraph az1[AZ1]
+            app1[Сервисы Chainwise<br/>EBS gp3]
+            db1[(PostgreSQL primary<br/>EBS io2)]
+            mt1[EFS mount target]
+        end
+
+        subgraph az2[AZ2]
+            app2[Сервисы Chainwise<br/>EBS gp3]
+            db2[(PostgreSQL standby<br/>EBS io2)]
+            mt2[EFS mount target]
+        end
+
+        subgraph az3[AZ3]
+            app3[Сервисы Chainwise<br/>EBS gp3]
+            db3[(PostgreSQL standby<br/>EBS io2)]
+            mt3[EFS mount target]
+        end
+
+        efs[(Regional EFS<br/>общий каталог NFSv4)]
+    end
+
+    alb --> app1
+    alb --> app2
+    alb --> app3
+
+    app1 --> db1
+    app2 --> db1
+    app3 --> db1
+    db1 -. репликация .-> db2
+    db1 -. репликация .-> db3
+
+    app1 --> mt1 --> efs
+    app2 --> mt2 --> efs
+    app3 --> mt3 --> efs
+
+    db1 -->|резервные копии| backups
+    db2 -. снапшоты .-> snapshots
+    db3 -. снапшоты .-> snapshots
+    db1 -. снапшоты .-> snapshots
