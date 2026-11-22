@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Chainwise · PostgreSQL replication</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0a0f1e;
+      --panel: #131b2f;
+      --panel-2: #19243d;
+      --text: #edf3ff;
+      --muted: #9cadc9;
+      --accent: #70e1b1;
+      --accent-2: #7ea4ff;
+      --danger: #ff7f91;
+      --warning: #ffc86b;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; background: radial-gradient(circle at top right, #18315a 0, transparent 34%), var(--bg); color: var(--text); }
+    main { width: min(1180px, calc(100% - 32px)); margin: 0 auto; padding: 42px 0 64px; }
+    header { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin-bottom: 24px; }
+    h1 { margin: 0 0 8px; font-size: clamp(30px, 5vw, 52px); letter-spacing: -0.045em; }
+    h2 { margin: 0 0 18px; font-size: 22px; }
+    p { margin: 0; color: var(--muted); line-height: 1.55; }
+    .eyebrow { color: var(--accent); font-weight: 700; letter-spacing: .12em; text-transform: uppercase; font-size: 12px; }
+    .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+    .card { border: 1px solid rgba(151, 179, 225, .16); border-radius: 18px; background: rgba(19, 27, 47, .92); box-shadow: 0 18px 48px rgba(0, 0, 0, .2); padding: 22px; }
+    .db-title { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
+    .badge { border-radius: 999px; padding: 6px 10px; font-size: 12px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; background: rgba(112, 225, 177, .12); color: var(--accent); }
+    .badge.off { background: rgba(255, 127, 145, .12); color: var(--danger); }
+    .values { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .value { padding: 14px; border-radius: 13px; background: var(--panel-2); }
+    .value span { display: block; color: var(--muted); font-size: 12px; margin-bottom: 7px; }
+    .value strong { font-size: 23px; }
+    .wide { grid-column: 1 / -1; }
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+    button { appearance: none; border: 0; border-radius: 11px; padding: 12px 16px; background: var(--accent); color: #082116; font: inherit; font-weight: 800; cursor: pointer; transition: transform .15s ease, opacity .15s ease; }
+    button.secondary { color: #eef3ff; background: #2f4774; }
+    button:hover { transform: translateY(-1px); }
+    button:disabled { cursor: wait; opacity: .55; transform: none; }
+    input { width: 110px; border: 1px solid rgba(151, 179, 225, .22); border-radius: 11px; padding: 12px; background: #0d1528; color: var(--text); font: inherit; }
+    .message { min-height: 24px; margin-top: 14px; color: var(--accent); }
+    .message.error { color: var(--danger); }
+    .lag { color: var(--warning); }
+    .table-wrap { overflow: auto; }
+    table { width: 100%; border-collapse: collapse; min-width: 720px; }
+    th, td { padding: 13px 12px; border-bottom: 1px solid rgba(151, 179, 225, .12); text-align: left; }
+    th { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
+    td { font-size: 14px; }
+    code { font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace; color: #bcd0ff; }
+    .footer-note { margin-top: 14px; font-size: 13px; }
+    @media (max-width: 760px) { .grid { grid-template-columns: 1fr; } header { align-items: flex-start; flex-direction: column; } }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <div>
+      <div class="eyebrow">Chainwise · лабораторная 6</div>
+      <h1>Поездки и репликация</h1>
+      <p>Запись идёт через write подключение, а список читается через read подключение.</p>
+    </div>
+    <div id="updated" class="badge">обновление</div>
+  </header>
+
+  <section class="grid">
+    <article class="card">
+      <div class="db-title"><h2>Write database</h2><span id="write-availability" class="badge">проверка</span></div>
+      <div class="values">
+        <div class="value"><span>Роль узла</span><strong id="write-role">—</strong></div>
+        <div class="value"><span>Поездок видно</span><strong id="write-count">—</strong></div>
+      </div>
+    </article>
+    <article class="card">
+      <div class="db-title"><h2>Read database</h2><span id="read-availability" class="badge">проверка</span></div>
+      <div class="values">
+        <div class="value"><span>Роль узла</span><strong id="read-role">—</strong></div>
+        <div class="value"><span>Поездок видно</span><strong id="read-count">—</strong></div>
+      </div>
+    </article>
+
+    <article class="card wide">
+      <h2>Состояние репликации</h2>
+      <div class="values">
+        <div class="value"><span>Нет на read database</span><strong id="missing" class="lag">—</strong></div>
+        <div class="value"><span>Отставание WAL</span><strong id="lag" class="lag">—</strong></div>
+        <div class="value"><span>Replay lag</span><strong id="replay-lag">—</strong></div>
+        <div class="value"><span>Streaming соединение</span><strong id="streaming">—</strong></div>
+      </div>
+    </article>
+
+    <article class="card wide">
+      <h2>Управление поездками</h2>
+      <div class="actions">
+        <button id="create">Создать запись</button>
+        <button id="load" class="secondary">Налить нагрузку</button>
+        <input id="load-count" type="number" min="1" max="10000" value="1000" aria-label="Количество записей для нагрузки">
+        <button id="refresh" class="secondary">Обновить записи</button>
+      </div>
+      <div id="message" class="message"></div>
+    </article>
+
+    <article class="card wide">
+      <h2>Записи</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>ID</th><th>Велосипед</th><th>Расстояние</th><th>Маршрут</th><th>Создана</th></tr></thead>
+          <tbody id="records"><tr><td colspan="5">Загрузка записей с read database</td></tr></tbody>
+        </table>
+      </div>
+      <p class="footer-note">Показываются последние 50 поездок, но счётчики выше учитывают всю таблицу.</p>
+    </article>
+  </section>
+</main>
+
+<script>
+  const el = id => document.getElementById(id);
+
+  function setAvailability(prefix, state) {
+    const badge = el(`${prefix}-availability`);
+    badge.textContent = state.available ? 'доступна' : 'недоступна';
+    badge.classList.toggle('off', !state.available);
+    el(`${prefix}-role`).textContent = state.available ? state.role : 'нет связи';
+    el(`${prefix}-count`).textContent = state.available ? state.trip_count.toLocaleString('ru-RU') : '—';
+  }
+
+  async function request(path, options = {}) {
+    const response = await fetch(path, options);
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || `HTTP ${response.status}`);
+    return data;
+  }
+
+  async function refreshStatus() {
+    try {
+      const state = await request('/api/status');
+      setAvailability('write', state.write_database);
+      setAvailability('read', state.read_database);
+      el('missing').textContent = state.missing_on_read_database.toLocaleString('ru-RU');
+      el('lag').textContent = `${Math.round(state.replica_lag_bytes).toLocaleString('ru-RU')} байт`;
+      el('replay-lag').textContent = `${Number(state.replica_replay_lag_seconds).toFixed(3)} с`;
+      el('streaming').textContent = state.replication_connection_up ? 'активно' : 'не видно';
+      el('updated').textContent = new Date().toLocaleTimeString('ru-RU');
+    } catch (error) {
+      el('updated').textContent = 'ошибка API';
+      el('updated').classList.add('off');
+    }
+  }
+
+  async function refreshRecords() {
+    const body = el('records');
+    try {
+      const data = await request('/api/trips');
+      body.innerHTML = data.records.length ? data.records.map(record => `
+        <tr>
+          <td><code>${escapeHtml(record.id)}</code></td>
+          <td>${escapeHtml(record.bike_id)}</td>
+          <td>${Number(record.distance_km).toFixed(1)} км</td>
+          <td>${escapeHtml(record.route_name)}</td>
+          <td>${new Date(record.created_at).toLocaleString('ru-RU')}</td>
+        </tr>`).join('') : '<tr><td colspan="5">На read database пока нет поездок</td></tr>';
+    } catch (error) {
+      body.innerHTML = `<tr><td colspan="5">Ошибка чтения с read database. ${escapeHtml(error.message)}</td></tr>`;
+    }
+  }
+
+  function escapeHtml(value) {
+    return String(value).replace(/[&<>'"]/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]));
+  }
+
+  async function act(button, action, successMessage) {
+    button.disabled = true;
+    const message = el('message');
+    message.classList.remove('error');
+    message.textContent = 'Выполняется запрос';
+    try {
+      const result = await action();
+      message.textContent = successMessage(result);
+    } catch (error) {
+      message.textContent = error.message;
+      message.classList.add('error');
+    } finally {
+      button.disabled = false;
+      await Promise.all([refreshStatus(), refreshRecords()]);
+    }
+  }
+
+  el('create').addEventListener('click', event => act(event.currentTarget,
+    () => request('/api/trips', {method: 'POST'}),
+    record => `Поездка ${record.id} записана через write database`));
+
+  el('load').addEventListener('click', event => act(event.currentTarget,
+    () => request(`/api/load?count=${encodeURIComponent(el('load-count').value)}`, {method: 'POST'}),
+    result => `В write database добавлено ${result.created} поездок`));
+
+  el('refresh').addEventListener('click', () => Promise.all([refreshStatus(), refreshRecords()]));
+
+  Promise.all([refreshStatus(), refreshRecords()]);
+  setInterval(() => Promise.all([refreshStatus(), refreshRecords()]), 2000);
+</script>
+</body>
+</html>

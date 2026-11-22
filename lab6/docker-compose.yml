@@ -1,0 +1,175 @@
+name: chainwise-lab6
+
+x-postgres-environment: &postgres-environment
+  POSTGRES_DB: ${POSTGRES_DB:-chainwise}
+  POSTGRES_USER: ${POSTGRES_ADMIN_USER:-postgres}
+  POSTGRES_PASSWORD: ${POSTGRES_ADMIN_PASSWORD:-postgres-local-password}
+  POSTGRES_ADMIN_USER: ${POSTGRES_ADMIN_USER:-postgres}
+  POSTGRES_APP_USER: ${POSTGRES_APP_USER:-chainwise_app}
+  POSTGRES_APP_PASSWORD: ${POSTGRES_APP_PASSWORD:-chainwise-app-local-password}
+  POSTGRES_REPLICATION_USER: ${POSTGRES_REPLICATION_USER:-replication_user}
+  POSTGRES_REPLICATION_PASSWORD: ${POSTGRES_REPLICATION_PASSWORD:-replication-local-password}
+  POSTGRES_EXPORTER_USER: ${POSTGRES_EXPORTER_USER:-postgres_exporter}
+  POSTGRES_EXPORTER_PASSWORD: ${POSTGRES_EXPORTER_PASSWORD:-exporter-local-password}
+
+services:
+  postgres-primary:
+    image: postgres:17-alpine
+    environment:
+      <<: *postgres-environment
+    command:
+      - postgres
+      - -c
+      - listen_addresses=*
+      - -c
+      - wal_level=replica
+      - -c
+      - max_wal_senders=10
+      - -c
+      - max_replication_slots=5
+      - -c
+      - wal_keep_size=256MB
+      - -c
+      - max_slot_wal_keep_size=512MB
+      - -c
+      - hot_standby=on
+      - -c
+      - password_encryption=scram-sha-256
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-primary-data:/var/lib/postgresql/data
+      - ./postgres/primary/init/01-init.sh:/docker-entrypoint-initdb.d/01-init.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - chainwise-db
+
+  postgres-standby:
+    build:
+      context: ./postgres/standby
+    environment:
+      <<: *postgres-environment
+      PGDATA: /var/lib/postgresql/data
+      PRIMARY_HOST: postgres-primary
+      PRIMARY_PORT: "5432"
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres-standby-data:/var/lib/postgresql/data
+    depends_on:
+      postgres-primary:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+      start_period: 20s
+    restart: unless-stopped
+    networks:
+      - chainwise-db
+
+  bike-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      HTTP_PORT: "8080"
+      POSTGRES_DB: ${POSTGRES_DB:-chainwise}
+      POSTGRES_APP_USER: ${POSTGRES_APP_USER:-chainwise_app}
+      POSTGRES_APP_PASSWORD: ${POSTGRES_APP_PASSWORD:-chainwise-app-local-password}
+      WRITE_DB_HOST: postgres-primary
+      WRITE_DB_PORT: "5432"
+      READ_DB_HOST: postgres-standby
+      READ_DB_PORT: "5432"
+    ports:
+      - "8081:8080"
+    depends_on:
+      postgres-primary:
+        condition: service_healthy
+      postgres-standby:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/healthz"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
+    restart: unless-stopped
+    networks:
+      - chainwise-db
+
+  postgres-exporter-primary:
+    image: quay.io/prometheuscommunity/postgres-exporter:v0.20.1
+    environment:
+      DATA_SOURCE_NAME: "postgresql://${POSTGRES_EXPORTER_USER:-postgres_exporter}:${POSTGRES_EXPORTER_PASSWORD:-exporter-local-password}@postgres-primary:5432/${POSTGRES_DB:-chainwise}?sslmode=disable"
+    depends_on:
+      postgres-primary:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - chainwise-db
+
+  postgres-exporter-standby:
+    image: quay.io/prometheuscommunity/postgres-exporter:v0.20.1
+    environment:
+      DATA_SOURCE_NAME: "postgresql://${POSTGRES_EXPORTER_USER:-postgres_exporter}:${POSTGRES_EXPORTER_PASSWORD:-exporter-local-password}@postgres-standby:5432/${POSTGRES_DB:-chainwise}?sslmode=disable"
+    depends_on:
+      postgres-standby:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - chainwise-db
+
+  prometheus:
+    image: prom/prometheus:v3.14.0
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --web.enable-lifecycle
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./monitoring/prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - prometheus-data:/prometheus
+    depends_on:
+      bike-api:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - chainwise-db
+
+  grafana:
+    image: grafana/grafana:13.2.0
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+    networks:
+      - chainwise-db
+
+volumes:
+  postgres-primary-data:
+  postgres-standby-data:
+  prometheus-data:
+  grafana-data:
+
+networks:
+  chainwise-db:
+    driver: bridge

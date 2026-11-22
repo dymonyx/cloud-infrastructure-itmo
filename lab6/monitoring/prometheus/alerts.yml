@@ -1,0 +1,30 @@
+groups:
+  - name: chainwise-postgres
+    rules:
+      - alert: ChainwiseWriteDatabaseUnavailable
+        expr: chainwise_postgres_write_database_up < 1
+        for: 10s
+        labels:
+          severity: critical
+        annotations:
+          summary: Write database недоступна
+          description: bike-api не может подключиться к базе, в которую направлены записи поездок.
+
+      - alert: ChainwiseReplicaLagHigh
+        expr: chainwise_postgres_replica_lag_bytes > 16384
+        for: 15s
+        labels:
+          severity: warning
+        annotations:
+          summary: Реплика Chainwise отстаёт
+          description: Разница между текущей WAL позицией primary и применённой позицией standby больше 16 KiB.
+
+      - alert: ChainwiseDatabaseConnectionsHigh
+        expr: sum by (database_role) (pg_stat_database_numbackends{datname="chainwise"}) > 20
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: У PostgreSQL много подключений
+          description: Число подключений к базе chainwise превысило 20 и может приблизиться к доступному лимиту.
+

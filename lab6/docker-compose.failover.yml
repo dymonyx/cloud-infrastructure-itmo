@@ -1,0 +1,11 @@
+services:
+  bike-api:
+    environment:
+      WRITE_DB_HOST: postgres-standby
+      WRITE_DB_PORT: "5432"
+      READ_DB_HOST: postgres-standby
+      READ_DB_PORT: "5432"
+    depends_on:
+      postgres-standby:
+        condition: service_healthy
+
