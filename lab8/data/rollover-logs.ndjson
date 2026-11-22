@@ -1,0 +1,40 @@
+{"create":{}}
+{"timestamp":"2026-11-22T11:00:00Z","level":"INFO","service":"frontend","message":"Открыта форма новой поездки","trace_id":"trace-rollover-2001"}
+{"create":{}}
+{"timestamp":"2026-11-22T11:01:00Z","level":"INFO","service":"bike-api","message":"Получены данные новой поездки","trace_id":"trace-rollover-2001"}
+{"create":{}}
+{"timestamp":"2026-11-22T11:02:00Z","level":"INFO","service":"bike-api","message":"Новая поездка сохранена","trace_id":"trace-rollover-2001"}
+{"create":{}}
+{"timestamp":"2026-11-22T11:03:00Z","level":"INFO","service":"maintenance-worker","message":"Событие новой поездки принято","trace_id":"trace-rollover-2001"}
+{"create":{}}
+{"timestamp":"2026-11-22T11:04:00Z","level":"WARN","service":"maintenance-api","message":"Цепь нужно проверить после следующей поездки","trace_id":"trace-rollover-2002"}
+{"create":{}}
+{"timestamp":"2026-11-22T11:05:00Z","level":"INFO","service":"notification-worker","message":"Напоминание о цепи отправлено","trace_id":"trace-rollover-2002"}
+{"create":{}}
+{"timestamp":"2026-11-22T11:06:00Z","level":"INFO","service":"weather-integration","message":"Прогноз для нового маршрута получен","trace_id":"trace-rollover-2003"}
+{"create":{}}
+{"timestamp":"2026-11-22T11:07:00Z","level":"WARN","service":"weather-integration","message":"На маршруте возможен дождь","trace_id":"trace-rollover-2003"}
+{"create":{}}
+{"timestamp":"2026-11-22T11:08:00Z","level":"ERROR","service":"bike-api","message":"Не удалось получить профиль велосипеда","trace_id":"trace-rollover-2004"}
+{"create":{}}
+{"timestamp":"2026-11-22T11:09:00Z","level":"INFO","service":"bike-api","message":"Профиль получен при повторном запросе","trace_id":"trace-rollover-2004"}
+{"create":{}}
+{"timestamp":"2026-11-22T11:10:00Z","level":"INFO","service":"frontend","message":"Профиль велосипеда отображён","trace_id":"trace-rollover-2004"}
+{"create":{}}
+{"timestamp":"2026-11-22T11:11:00Z","level":"WARN","service":"postgresql","message":"Медленный запрос списка поездок","trace_id":"trace-rollover-2005"}
+{"create":{}}
+{"timestamp":"2026-11-22T11:12:00Z","level":"INFO","service":"bike-api","message":"Список поездок возвращён пользователю","trace_id":"trace-rollover-2005"}
+{"create":{}}
+{"timestamp":"2026-11-22T11:13:00Z","level":"ERROR","service":"notification-worker","message":"Почтовое уведомление не отправлено","trace_id":"trace-rollover-2006"}
+{"create":{}}
+{"timestamp":"2026-11-22T11:14:00Z","level":"INFO","service":"notification-worker","message":"Почтовое уведомление отправлено повторно","trace_id":"trace-rollover-2006"}
+{"create":{}}
+{"timestamp":"2026-11-22T11:15:00Z","level":"INFO","service":"maintenance-worker","message":"Пробег велосипеда пересчитан","trace_id":"trace-rollover-2007"}
+{"create":{}}
+{"timestamp":"2026-11-22T11:16:00Z","level":"WARN","service":"maintenance-api","message":"Передняя покрышка требует проверки","trace_id":"trace-rollover-2007"}
+{"create":{}}
+{"timestamp":"2026-11-22T11:17:00Z","level":"INFO","service":"frontend","message":"Рекомендация по покрышке отображена","trace_id":"trace-rollover-2007"}
+{"create":{}}
+{"timestamp":"2026-11-22T11:18:00Z","level":"ERROR","service":"weather-integration","message":"Истёк таймаут погодного API","trace_id":"trace-rollover-2008"}
+{"create":{}}
+{"timestamp":"2026-11-22T11:19:00Z","level":"INFO","service":"bike-api","message":"Для поездки использован сохранённый прогноз","trace_id":"trace-rollover-2008"}

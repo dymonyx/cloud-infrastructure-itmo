@@ -1,0 +1,30 @@
+groups:
+  - name: chainwise-elasticsearch
+    rules:
+      - alert: ChainwiseElasticsearchClusterRed
+        expr: elasticsearch_cluster_health_status{color="red"} == 1
+        for: 30s
+        labels:
+          severity: critical
+        annotations:
+          summary: Elasticsearch cluster red
+          description: Один или несколько primary shards недоступны, поэтому часть логов нельзя записать или найти.
+
+      - alert: ChainwiseElasticsearchHeapHigh
+        expr: 100 * sum(elasticsearch_jvm_memory_used_bytes{area="heap"}) / sum(elasticsearch_jvm_memory_max_bytes) > 80
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: Elasticsearch JVM heap выше 80 процентов
+          description: Высокое потребление heap увеличивает паузы GC и может завершиться OutOfMemory.
+
+      - alert: ChainwiseElasticsearchDiskLow
+        expr: min(elasticsearch_filesystem_data_available_bytes) < 1073741824
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: Для Elasticsearch осталось меньше 1 GiB
+          description: При заполнении диска Elasticsearch ограничивает размещение shards и может перевести indices в read only.
+

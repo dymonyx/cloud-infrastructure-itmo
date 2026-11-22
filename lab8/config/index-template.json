@@ -1,0 +1,33 @@
+{
+  "index_patterns": ["chainwise-logs-*"],
+  "priority": 200,
+  "template": {
+    "settings": {
+      "number_of_shards": 1,
+      "number_of_replicas": 1,
+      "index.lifecycle.name": "chainwise-logs-policy",
+      "index.lifecycle.rollover_alias": "chainwise-logs"
+    },
+    "mappings": {
+      "dynamic": "strict",
+      "properties": {
+        "timestamp": {
+          "type": "date"
+        },
+        "level": {
+          "type": "keyword"
+        },
+        "service": {
+          "type": "keyword"
+        },
+        "message": {
+          "type": "text"
+        },
+        "trace_id": {
+          "type": "keyword"
+        }
+      }
+    }
+  }
+}
+

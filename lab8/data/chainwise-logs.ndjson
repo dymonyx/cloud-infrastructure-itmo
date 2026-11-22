@@ -1,0 +1,80 @@
+{"create":{}}
+{"timestamp":"2026-11-22T10:00:00Z","level":"INFO","service":"frontend","message":"Открыта страница профиля велосипеда","trace_id":"trace-profile-1001"}
+{"create":{}}
+{"timestamp":"2026-11-22T10:01:00Z","level":"INFO","service":"bike-api","message":"Загружен профиль велосипеда bike-001","trace_id":"trace-profile-1001"}
+{"create":{}}
+{"timestamp":"2026-11-22T10:02:00Z","level":"INFO","service":"frontend","message":"Пользователь отправил новую поездку","trace_id":"trace-ride-1002"}
+{"create":{}}
+{"timestamp":"2026-11-22T10:03:00Z","level":"INFO","service":"bike-api","message":"Поездка сохранена в PostgreSQL","trace_id":"trace-ride-1002"}
+{"create":{}}
+{"timestamp":"2026-11-22T10:04:00Z","level":"INFO","service":"maintenance-worker","message":"Пробег велосипеда обновлён после поездки","trace_id":"trace-ride-1002"}
+{"create":{}}
+{"timestamp":"2026-11-22T10:05:00Z","level":"WARN","service":"maintenance-api","message":"Износ цепи приблизился к порогу обслуживания","trace_id":"trace-maintenance-1003"}
+{"create":{}}
+{"timestamp":"2026-11-22T10:06:00Z","level":"INFO","service":"notification-worker","message":"Отправлено напоминание о проверке цепи","trace_id":"trace-maintenance-1003"}
+{"create":{}}
+{"timestamp":"2026-11-22T10:07:00Z","level":"INFO","service":"weather-integration","message":"Получен прогноз погоды для маршрута","trace_id":"trace-weather-1004"}
+{"create":{}}
+{"timestamp":"2026-11-22T10:08:00Z","level":"WARN","service":"weather-integration","message":"На время поездки ожидается сильный ветер","trace_id":"trace-weather-1004"}
+{"create":{}}
+{"timestamp":"2026-11-22T10:09:00Z","level":"INFO","service":"frontend","message":"Показана рекомендация перенести поездку","trace_id":"trace-weather-1004"}
+{"create":{}}
+{"timestamp":"2026-11-22T10:10:00Z","level":"ERROR","service":"bike-api","message":"Не удалось сохранить поездку из-за ошибки базы данных","trace_id":"trace-ride-1005"}
+{"create":{}}
+{"timestamp":"2026-11-22T10:11:00Z","level":"ERROR","service":"postgresql","message":"Превышено время ожидания подключения bike-api","trace_id":"trace-ride-1005"}
+{"create":{}}
+{"timestamp":"2026-11-22T10:12:00Z","level":"WARN","service":"bike-api","message":"Повторная попытка сохранения поездки","trace_id":"trace-ride-1005"}
+{"create":{}}
+{"timestamp":"2026-11-22T10:13:00Z","level":"INFO","service":"bike-api","message":"Поездка успешно сохранена после повторной попытки","trace_id":"trace-ride-1005"}
+{"create":{}}
+{"timestamp":"2026-11-22T10:14:00Z","level":"INFO","service":"maintenance-worker","message":"Получено событие trip-recorded из Kafka","trace_id":"trace-ride-1006"}
+{"create":{}}
+{"timestamp":"2026-11-22T10:15:00Z","level":"INFO","service":"maintenance-api","message":"Рассчитан новый пробег велосипеда","trace_id":"trace-ride-1006"}
+{"create":{}}
+{"timestamp":"2026-11-22T10:16:00Z","level":"WARN","service":"maintenance-api","message":"Тормозные колодки требуют проверки через 50 км","trace_id":"trace-maintenance-1006"}
+{"create":{}}
+{"timestamp":"2026-11-22T10:17:00Z","level":"INFO","service":"frontend","message":"Пользователь начал создание поездки","trace_id":"trace-ride-1007"}
+{"create":{}}
+{"timestamp":"2026-11-22T10:18:00Z","level":"INFO","service":"bike-api","message":"Поездка trace-ride-1007 записана в базу","trace_id":"trace-ride-1007"}
+{"create":{}}
+{"timestamp":"2026-11-22T10:19:00Z","level":"WARN","service":"maintenance-worker","message":"После поездки обнаружен высокий износ цепи","trace_id":"trace-ride-1007"}
+{"create":{}}
+{"timestamp":"2026-11-22T10:20:00Z","level":"INFO","service":"notification-worker","message":"Пользователю отправлено уведомление по поездке","trace_id":"trace-ride-1007"}
+{"create":{}}
+{"timestamp":"2026-11-22T10:21:00Z","level":"ERROR","service":"notification-worker","message":"Не удалось отправить push уведомление","trace_id":"trace-notify-1008"}
+{"create":{}}
+{"timestamp":"2026-11-22T10:22:00Z","level":"WARN","service":"notification-worker","message":"Push уведомление поставлено на повторную отправку","trace_id":"trace-notify-1008"}
+{"create":{}}
+{"timestamp":"2026-11-22T10:23:00Z","level":"INFO","service":"notification-worker","message":"Push уведомление успешно отправлено","trace_id":"trace-notify-1008"}
+{"create":{}}
+{"timestamp":"2026-11-22T10:24:00Z","level":"ERROR","service":"weather-integration","message":"Внешний погодный API вернул статус 503","trace_id":"trace-weather-1009"}
+{"create":{}}
+{"timestamp":"2026-11-22T10:25:00Z","level":"WARN","service":"bike-api","message":"Для маршрута использован последний сохранённый прогноз","trace_id":"trace-weather-1009"}
+{"create":{}}
+{"timestamp":"2026-11-22T10:26:00Z","level":"INFO","service":"frontend","message":"Показан сохранённый прогноз погоды","trace_id":"trace-weather-1009"}
+{"create":{}}
+{"timestamp":"2026-11-22T10:27:00Z","level":"ERROR","service":"maintenance-worker","message":"Не удалось обработать событие обслуживания","trace_id":"trace-maintenance-1010"}
+{"create":{}}
+{"timestamp":"2026-11-22T10:28:00Z","level":"WARN","service":"maintenance-worker","message":"Событие возвращено в очередь для повторной обработки","trace_id":"trace-maintenance-1010"}
+{"create":{}}
+{"timestamp":"2026-11-22T10:29:00Z","level":"INFO","service":"maintenance-worker","message":"Повторная обработка события завершена","trace_id":"trace-maintenance-1010"}
+{"create":{}}
+{"timestamp":"2026-11-22T10:30:00Z","level":"ERROR","service":"bike-api","message":"Запрос списка поездок завершился по таймауту","trace_id":"trace-list-1011"}
+{"create":{}}
+{"timestamp":"2026-11-22T10:31:00Z","level":"INFO","service":"bike-api","message":"Список поездок получен при повторном запросе","trace_id":"trace-list-1011"}
+{"create":{}}
+{"timestamp":"2026-11-22T10:32:00Z","level":"WARN","service":"postgresql","message":"Число подключений приблизилось к учебному лимиту","trace_id":"trace-db-1012"}
+{"create":{}}
+{"timestamp":"2026-11-22T10:33:00Z","level":"ERROR","service":"postgresql","message":"Транзакция отменена из-за взаимной блокировки","trace_id":"trace-db-1013"}
+{"create":{}}
+{"timestamp":"2026-11-22T10:34:00Z","level":"INFO","service":"bike-api","message":"Транзакция поездки повторена после deadlock","trace_id":"trace-db-1013"}
+{"create":{}}
+{"timestamp":"2026-11-22T10:35:00Z","level":"WARN","service":"maintenance-api","message":"Рекомендуется очистить и смазать цепь","trace_id":"trace-maintenance-1014"}
+{"create":{}}
+{"timestamp":"2026-11-22T10:36:00Z","level":"INFO","service":"frontend","message":"Показана рекомендация по обслуживанию цепи","trace_id":"trace-maintenance-1014"}
+{"create":{}}
+{"timestamp":"2026-11-22T10:37:00Z","level":"ERROR","service":"frontend","message":"Не удалось загрузить историю обслуживания","trace_id":"trace-ui-1015"}
+{"create":{}}
+{"timestamp":"2026-11-22T10:38:00Z","level":"INFO","service":"bike-api","message":"История обслуживания возвращена из кэша","trace_id":"trace-ui-1015"}
+{"create":{}}
+{"timestamp":"2026-11-22T10:39:00Z","level":"INFO","service":"frontend","message":"История обслуживания отображена пользователю","trace_id":"trace-ui-1015"}

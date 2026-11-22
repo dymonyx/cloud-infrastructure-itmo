@@ -1,0 +1,81 @@
+# Состояние одноузлового кластера
+GET _cluster/health
+
+# Маппинг индекса
+GET chainwise-logs-*/_mapping
+
+# Полнотекстовый поиск по message
+GET chainwise-logs/_search
+{
+  "size": 20,
+  "query": {
+    "match": {
+      "message": "цепи"
+    }
+  },
+  "sort": [
+    {"timestamp": "asc"}
+  ]
+}
+
+# Фильтр ERROR и временной диапазон
+GET chainwise-logs/_search
+{
+  "size": 20,
+  "query": {
+    "bool": {
+      "filter": [
+        {"term": {"level": "ERROR"}},
+        {
+          "range": {
+            "timestamp": {
+              "gte": "2026-11-22T10:00:00Z",
+              "lte": "2026-11-22T10:59:59Z"
+            }
+          }
+        }
+      ]
+    }
+  },
+  "sort": [
+    {"timestamp": "asc"}
+  ]
+}
+
+# Поиск одной операции по trace_id
+GET chainwise-logs/_search
+{
+  "size": 20,
+  "query": {
+    "term": {
+      "trace_id": "trace-ride-1007"
+    }
+  },
+  "sort": [
+    {"timestamp": "asc"}
+  ]
+}
+
+# Агрегация количества логов по level
+GET chainwise-logs/_search
+{
+  "size": 0,
+  "aggs": {
+    "logs_by_level": {
+      "terms": {
+        "field": "level",
+        "size": 10
+      }
+    }
+  }
+}
+
+# ILM policy, template и alias
+GET _ilm/policy/chainwise-logs-policy
+GET _index_template/chainwise-logs-template
+GET _cat/aliases/chainwise-logs?v
+GET chainwise-logs-*/_ilm/explain
+
+# Индексы после автоматического rollover
+GET _cat/indices/chainwise-logs-*?v&s=index
+
