@@ -1,0 +1,42 @@
+flowchart TB
+    users([Пользователи Chainwise])
+
+    subgraph production[Production]
+        direction LR
+        frontend[frontend<br/>3–9 экземпляров<br/>CVoS база и On-Demand пики]
+        backend[bike-api и внутренние API<br/>3–9 экземпляров<br/>CVoS база и On-Demand пики]
+        database[(PostgreSQL · 3 узла<br/>CVoS на один год)]
+        workers[Фоновые worker-ы<br/>прерываемые ВМ<br/>только для повторяемых задач]
+    end
+
+    subgraph nonprod[Test]
+        testenv[test-environment<br/>прерываемая ВМ<br/>10:00–18:00 по рабочим дням]
+    end
+
+    subgraph storage[Object Storage]
+        direction LR
+        standard[(STANDARD<br/>активные файлы)]
+        cold[(COLD<br/>бэкапы и старые логи)]
+        ice[(ICE<br/>долгосрочный архив)]
+        standard -->|по снижению частоты доступа| cold
+        cold -->|для хранения от одного года| ice
+    end
+
+    users --> frontend --> backend --> database
+    backend --> workers
+    backend --> standard
+    database -->|резервные копии| cold
+
+    labels[Обязательные метки<br/>env · project · team · cost_center]
+    billing[Yandex Cloud Billing<br/>распределение затрат]
+    budget[Бюджет Chainwise<br/>50% раннее предупреждение<br/>90% срочная реакция]
+
+    frontend -. метки .-> labels
+    backend -. метки .-> labels
+    database -. метки .-> labels
+    workers -. метки .-> labels
+    testenv -. метки .-> labels
+    standard -. метки .-> labels
+    cold -. метки .-> labels
+    ice -. метки .-> labels
+    labels --> billing --> budget
